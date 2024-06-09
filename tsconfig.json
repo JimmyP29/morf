@@ -6,6 +6,7 @@
     /* Modules */
     "module": "ESNext" /* Specify what module code is generated. */,
     "rootDir": "src" /* Specify the root folder within your source files. */,
+    "moduleResolution": "node",
 
     /* Emit */
     "declaration": true /* Generate .d.ts files from TypeScript and JavaScript files in your project. */,
