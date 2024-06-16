@@ -8,8 +8,8 @@
   },
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "dev": "npm run build && node dist/index.js",
+    "dev": "tsc -w",
+    "link-cli": "(npm unlink morf || true) && npm link",
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write .",
     "lint": "eslint .",
