@@ -1,12 +1,28 @@
 #!/usr/bin/env node
-import { program } from 'commander';
+import fs from 'fs';
+import path from 'path';
 
-program
-  .version('1.0.0')
-  .description('morf')
-  .option('-n, --name <type>', 'Add your name')
-  .action((options) => {
-    console.log(`Hey ${options.name}`);
+console.log('Working...');
+
+const createFileFromPath = async (pathToFile: string) => {
+  const ext = path.extname(pathToFile);
+  console.log('EXT: ', ext);
+
+  return new Promise((resolve) => {
+    const chunks: any = [];
+    fs.createReadStream(pathToFile, 'utf-8')
+      .on('error', (err) => {
+        console.error('ERROR: ', err);
+      })
+      .on('data', (chunk) => {
+        chunks.push(chunk);
+      })
+      .on('end', () => {
+        resolve(chunks);
+      });
   });
+};
 
-program.parse(process.argv);
+// const file = await createFileFromPath('./test-data/dummy1.json');
+const file = await createFileFromPath('./test-data/dummy1.csv');
+console.log('FILE: ', file);
