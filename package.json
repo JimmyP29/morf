@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsc -w",
+    "start": "node dist/index.js",
     "link-cli": "(npm unlink morf || true) && npm link",
     "test": "echo \"Error: no test specified\" && exit 1",
     "format": "prettier --write .",
@@ -31,8 +32,5 @@
   },
   "lint-staged": {
     "*": "prettier --ignore-unknown --write"
-  },
-  "dependencies": {
-    "commander": "^12.1.0"
   }
 }
