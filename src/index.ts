@@ -6,18 +6,25 @@ import stream from 'stream';
 
 const finished = util.promisify(stream.finished);
 
-console.log('Working...');
+// ANSI escape codes for text color
+const RED = '\x1b[31m';
+const GREEN = '\x1b[32m';
+const CYAN = '\x1b[36m';
+const RESET = '\x1b[0m';
+
+console.log(`${CYAN}%s${RESET}`, 'Working...');
 
 const getDataFromOriginFile = async (pathToFile: string) => {
   const ext = path.extname(pathToFile);
 
-  if (!ext) throw Error('Please provide a valid file (.json or .csv)');
+  if (!ext)
+    throw Error(`${RED}Please provide a valid file (.json or .csv)${RESET}`);
 
   return new Promise((resolve) => {
     const chunks: any = [];
     fs.createReadStream(pathToFile, 'utf-8')
       .on('error', (err) => {
-        console.error('ERROR: ', err);
+        console.error(`${RED}%s${RESET}`, err);
       })
       .on('data', (chunk) => {
         chunks.push({ chunk: chunk, type: ext });
@@ -32,17 +39,20 @@ const createFileAtDestination = async (
   file: { chunk: any; type: string }[],
   destination: string,
 ) => {
-  if (!file || file.length === 0) throw Error('No file found');
+  if (!file || file.length === 0) throw Error(`${RED}No file found${RESET}`);
 
   try {
     if (!fs.existsSync(destination)) {
       fs.mkdirSync(destination);
       const folder = path.basename(destination);
       const parentFolder = path.dirname(destination);
-      console.log(`New folder - '${folder}' created at ${parentFolder}`);
+      console.log(
+        `${GREEN}%s${RESET}`,
+        `New folder - '${folder}' created at ${parentFolder}`,
+      );
     }
   } catch (error) {
-    console.error(error);
+    console.error(`${RED}%s${RESET}`, error);
   }
 
   const { chunk, type } = file[0];
@@ -56,7 +66,10 @@ const createFileAtDestination = async (
 
   await finished(writable);
 
-  console.log(`File (test${type}) created at ${destination}`);
+  console.log(
+    `${GREEN}%s${RESET}`,
+    `File (test${type}) created at ${destination}`,
+  );
 };
 
 const jsonFile = await getDataFromOriginFile('./test-data/origin/dummy1.json');
