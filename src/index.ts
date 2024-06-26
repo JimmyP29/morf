@@ -12,9 +12,11 @@ const GREEN = '\x1b[32m';
 const CYAN = '\x1b[36m';
 const RESET = '\x1b[0m';
 
-console.log(`${CYAN}%s${RESET}`, 'Working...');
+console.log(`${CYAN}%s${RESET}`, 'Starting...');
 
-const getDataFromOriginFile = async (pathToFile: string) => {
+const getDataFromOriginFile = async (
+  pathToFile: string,
+): Promise<Array<{ chunk: any; type: string }>> => {
   const ext = path.extname(pathToFile);
 
   if (!ext)
@@ -72,7 +74,48 @@ const createFileAtDestination = async (
   );
 };
 
-const jsonFile = await getDataFromOriginFile('./test-data/origin/dummy1.json');
-const csvFile = await getDataFromOriginFile('./test-data/origin/dummy1.csv');
+const fromJSONToCSV = (json: any) => {
+  try {
+    const csv = json.map((row: any) => Object.values(row));
+    csv.unshift(Object.keys(json[0]));
+    return csv.join('\n');
+  } catch (error) {
+    console.error(`${RED}${error}${RESET}`);
+  }
+};
 
-createFileAtDestination(jsonFile as [], './test-data/destination');
+const convertFile = async (from: string, as: string, destination: string) => {
+  const fileData: { chunk: any; type: string }[] =
+    await getDataFromOriginFile(from);
+
+  if (!fileData || fileData.length === 0)
+    throw Error(`${RED}No file data found${RESET}`);
+
+  let convertedFileData = null;
+
+  if (fileData[0].type === '.json') {
+    const json = JSON.parse(fileData[0].chunk);
+
+    console.log('FILE DATA: ', json);
+
+    if (as === '.csv') {
+      convertedFileData = fromJSONToCSV([json]);
+      console.log(`${CYAN}%s${RESET}`, 'Morphing...');
+      createFileAtDestination(
+        [{ chunk: convertedFileData, type: '.csv' }],
+        destination,
+      );
+    }
+  }
+};
+
+// const jsonFile = await getDataFromOriginFile('./test-data/origin/dummy1.json');
+// const csvFile = await getDataFromOriginFile('./test-data/origin/dummy1.csv');
+
+// createFileAtDestination(jsonFile as [], './test-data/destination');
+
+convertFile(
+  './test-data/origin/dummy1.json',
+  '.csv',
+  './test-data/destination/converted',
+);
