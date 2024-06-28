@@ -74,14 +74,37 @@ const createFileAtDestination = async (
   );
 };
 
-const fromJSONToCSV = (json: any) => {
+const fromJSONToCSV = (formerData: any) => {
   try {
-    const csv = json.map((row: any) => Object.values(row));
-    csv.unshift(Object.keys(json[0]));
+    const csv = formerData.map((row: any) => Object.values(row));
+    csv.unshift(Object.keys(formerData[0]));
     return csv.join('\n');
   } catch (error) {
     console.error(`${RED}${error}${RESET}`);
   }
+};
+
+const fromCSVToJSON = (formerData: any[]) => {
+  const formattedData = [];
+  const [head, ...body] = formerData;
+
+  const headArray = head.split(',');
+  const bodyArray = body.map((element) => element.split(','));
+
+  try {
+    const reduceData = (headArr: any[], bodyArr: any[]) =>
+      headArr.reduce((prev: any, cur: any, index: number) => {
+        return { ...prev, [cur]: bodyArr[index] };
+      }, {});
+
+    for (let i = 0; i < bodyArray.length; i++) {
+      formattedData.push(reduceData(headArray, bodyArray[i]));
+    }
+  } catch (error) {
+    console.error(`${RED}${error}${RESET}`);
+  }
+
+  return JSON.stringify(formattedData);
 };
 
 const convertFile = async (from: string, as: string, destination: string) => {
@@ -91,22 +114,24 @@ const convertFile = async (from: string, as: string, destination: string) => {
   if (!fileData || fileData.length === 0)
     throw Error(`${RED}No file data found${RESET}`);
 
-  let convertedFileData = null;
+  let convertedFileData = '';
+
+  console.log(`${CYAN}%s${RESET}`, 'Morphing...');
 
   if (fileData[0].type === '.json') {
-    const json = JSON.parse(fileData[0].chunk);
+    const formerData = JSON.parse(fileData[0].chunk);
 
-    console.log('FILE DATA: ', json);
+    convertedFileData = fromJSONToCSV([formerData]);
+  } else if (fileData[0].type === '.csv') {
+    const formerData = fileData[0].chunk.toString().split('\n');
 
-    if (as === '.csv') {
-      convertedFileData = fromJSONToCSV([json]);
-      console.log(`${CYAN}%s${RESET}`, 'Morphing...');
-      createFileAtDestination(
-        [{ chunk: convertedFileData, type: '.csv' }],
-        destination,
-      );
-    }
+    convertedFileData = fromCSVToJSON(formerData);
   }
+
+  createFileAtDestination(
+    [{ chunk: convertedFileData, type: as }],
+    destination,
+  );
 };
 
 // const jsonFile = await getDataFromOriginFile('./test-data/origin/dummy1.json');
@@ -119,3 +144,27 @@ convertFile(
   '.csv',
   './test-data/destination/converted',
 );
+// convertFile(
+//   './test-data/origin/dummy1.csv',
+//   '.json',
+//   './test-data/destination/converted',
+// );
+// convertFile(
+//   './test-data/origin/dummy1.json',
+//   '.csv',
+//   './test-data/destination/converted',
+// );
+
+// setTimeout(() => {
+//   convertFile(
+//     './test-data/destination/converted/test.csv',
+//     '.json',
+//     './test-data/destination/converted',
+//   );
+// }, 1000);
+
+// convertFile(
+//   './test-data/destination/converted/test.json',
+//   '.csv',
+//   './test-data/destination/converted',
+// );
