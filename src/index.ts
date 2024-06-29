@@ -39,6 +39,7 @@ const getDataFromOriginFile = async (
 
 const createFileAtDestination = async (
   file: { chunk: any; type: string }[],
+  fileName: string,
   destination: string,
 ) => {
   if (!file || file.length === 0) throw Error(`${RED}No file found${RESET}`);
@@ -46,6 +47,7 @@ const createFileAtDestination = async (
   try {
     if (!fs.existsSync(destination)) {
       fs.mkdirSync(destination);
+
       const folder = path.basename(destination);
       const parentFolder = path.dirname(destination);
       console.log(
@@ -56,12 +58,16 @@ const createFileAtDestination = async (
   } catch (error) {
     console.error(`${RED}%s${RESET}`, error);
   }
-
+  const now = new Date().toISOString();
+  const finalFileName = `${fileName}-${now}`;
   const { chunk, type } = file[0];
 
-  const writable = fs.createWriteStream(`${destination}/test${type}`, {
-    encoding: 'utf-8',
-  });
+  const writable = fs.createWriteStream(
+    `${destination}/${finalFileName}${type}`,
+    {
+      encoding: 'utf-8',
+    },
+  );
 
   writable.write(chunk);
   writable.end();
@@ -70,7 +76,7 @@ const createFileAtDestination = async (
 
   console.log(
     `${GREEN}%s${RESET}`,
-    `File (test${type}) created at ${destination}`,
+    `File (${finalFileName}${type}) created at ${destination}`,
   );
 };
 
@@ -128,8 +134,11 @@ const convertFile = async (from: string, as: string, destination: string) => {
     convertedFileData = fromCSVToJSON(formerData);
   }
 
+  const fileName = path.basename(from).split('.')[0];
+
   createFileAtDestination(
     [{ chunk: convertedFileData, type: as }],
+    fileName,
     destination,
   );
 };
@@ -139,21 +148,21 @@ const convertFile = async (from: string, as: string, destination: string) => {
 
 // createFileAtDestination(jsonFile as [], './test-data/destination');
 
-convertFile(
-  './test-data/origin/dummy1.json',
-  '.csv',
-  './test-data/destination/converted',
-);
-// convertFile(
-//   './test-data/origin/dummy1.csv',
-//   '.json',
-//   './test-data/destination/converted',
-// );
 // convertFile(
 //   './test-data/origin/dummy1.json',
 //   '.csv',
 //   './test-data/destination/converted',
 // );
+// convertFile(
+//   './test-data/origin/people-100.csv',
+//   '.json',
+//   './test-data/destination/converted',
+// );
+convertFile(
+  './test-data/origin/dummy1.json',
+  '.csv',
+  './test-data/destination/converted',
+);
 
 // setTimeout(() => {
 //   convertFile(
