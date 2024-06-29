@@ -14,9 +14,14 @@ const RESET = '\x1b[0m';
 
 console.log(`${CYAN}%s${RESET}`, 'Starting...');
 
+enum FileType {
+  Json = '.json',
+  CSV = '.csv',
+}
+
 const getDataFromOriginFile = async (
   pathToFile: string,
-): Promise<Array<{ chunk: any; type: string }>> => {
+): Promise<Array<{ chunk: any; type: FileType }>> => {
   const ext = path.extname(pathToFile);
 
   if (!ext)
@@ -38,7 +43,7 @@ const getDataFromOriginFile = async (
 };
 
 const createFileAtDestination = async (
-  file: { chunk: any; type: string }[],
+  file: { chunk: any; type: FileType }[],
   fileName: string,
   destination: string,
 ) => {
@@ -83,6 +88,7 @@ const createFileAtDestination = async (
 const fromJSONToCSV = (formerData: any) => {
   try {
     const csv = formerData.map((row: any) => Object.values(row));
+
     csv.unshift(Object.keys(formerData[0]));
     return csv.join('\n');
   } catch (error) {
@@ -106,6 +112,8 @@ const fromCSVToJSON = (formerData: any[]) => {
     for (let i = 0; i < bodyArray.length; i++) {
       formattedData.push(reduceData(headArray, bodyArray[i]));
     }
+
+    console.table(formattedData);
   } catch (error) {
     console.error(`${RED}${error}${RESET}`);
   }
@@ -113,22 +121,33 @@ const fromCSVToJSON = (formerData: any[]) => {
   return JSON.stringify(formattedData);
 };
 
-const convertFile = async (from: string, as: string, destination: string) => {
-  const fileData: { chunk: any; type: string }[] =
+const convertFile = async (
+  from: string,
+  convertTo: FileType,
+  destination: string,
+) => {
+  const fileData: { chunk: any; type: FileType }[] =
     await getDataFromOriginFile(from);
 
   if (!fileData || fileData.length === 0)
     throw Error(`${RED}No file data found${RESET}`);
 
-  let convertedFileData = '';
+  const ext = `.${path.basename(from).split('.')[1]}`;
+
+  if (ext === convertTo.toString())
+    throw Error(
+      `${RED}Origin file type of ${ext} cannot be the same as the intended conversion type ${convertTo}${RESET}`,
+    );
 
   console.log(`${CYAN}%s${RESET}`, 'Morphing...');
 
-  if (fileData[0].type === '.json') {
+  let convertedFileData = '';
+
+  if (fileData[0].type === FileType.Json) {
     const formerData = JSON.parse(fileData[0].chunk);
 
     convertedFileData = fromJSONToCSV([formerData]);
-  } else if (fileData[0].type === '.csv') {
+  } else if (fileData[0].type === FileType.CSV) {
     const formerData = fileData[0].chunk.toString().split('\n');
 
     convertedFileData = fromCSVToJSON(formerData);
@@ -137,7 +156,7 @@ const convertFile = async (from: string, as: string, destination: string) => {
   const fileName = path.basename(from).split('.')[0];
 
   createFileAtDestination(
-    [{ chunk: convertedFileData, type: as }],
+    [{ chunk: convertedFileData, type: convertTo }],
     fileName,
     destination,
   );
@@ -159,8 +178,8 @@ const convertFile = async (from: string, as: string, destination: string) => {
 //   './test-data/destination/converted',
 // );
 convertFile(
-  './test-data/origin/dummy1.json',
-  '.csv',
+  './test-data/origin/dummy1.csv',
+  FileType.Json,
   './test-data/destination/converted',
 );
 
