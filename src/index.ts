@@ -15,7 +15,7 @@ const RESET = '\x1b[0m';
 console.log(`${CYAN}%s${RESET}`, 'Starting...');
 
 enum FileType {
-  Json = '.json',
+  JSON = '.json',
   CSV = '.csv',
 }
 
@@ -136,14 +136,14 @@ const convertFile = async (
 
   if (ext === convertTo.toString())
     throw Error(
-      `${RED}Origin file type of ${ext} cannot be the same as the intended conversion type ${convertTo}${RESET}`,
+      `${RED}Origin file type of ${ext} cannot be the same as the intended conversion type ${convertTo} - Use createFileAtDestination() instead.${RESET}`,
     );
 
   console.log(`${CYAN}%s${RESET}`, 'Morphing...');
 
   let convertedFileData = '';
 
-  if (fileData[0].type === FileType.Json) {
+  if (fileData[0].type === FileType.JSON) {
     const formerData = JSON.parse(fileData[0].chunk);
 
     convertedFileData = fromJSONToCSV([formerData]);
@@ -162,6 +162,8 @@ const convertFile = async (
   );
 };
 
+const aggregateJSONToCSV = () => {};
+
 // const jsonFile = await getDataFromOriginFile('./test-data/origin/dummy1.json');
 // const csvFile = await getDataFromOriginFile('./test-data/origin/dummy1.csv');
 
@@ -179,7 +181,7 @@ const convertFile = async (
 // );
 convertFile(
   './test-data/origin/dummy1.csv',
-  FileType.Json,
+  FileType.CSV,
   './test-data/destination/converted',
 );
 
