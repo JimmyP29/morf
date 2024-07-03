@@ -46,7 +46,7 @@ const createFileAtDestination = async (
   file: { chunk: any; type: FileType }[],
   fileName: string,
   destination: string,
-) => {
+): Promise<void> => {
   if (!file || file.length === 0) throw Error(`${RED}No file found${RESET}`);
 
   try {
@@ -85,18 +85,19 @@ const createFileAtDestination = async (
   );
 };
 
-const fromJSONToCSV = (formerData: any) => {
+const fromJSONToCSV = (formerData: any): string => {
+  let csv;
   try {
-    const csv = formerData.map((row: any) => Object.values(row));
+    csv = formerData.map((row: any) => Object.values(row));
 
     csv.unshift(Object.keys(formerData[0]));
-    return csv.join('\n');
   } catch (error) {
     console.error(`${RED}${error}${RESET}`);
   }
+  return csv.join('\n');
 };
 
-const fromCSVToJSON = (formerData: any[]) => {
+const fromCSVToJSON = (formerData: any[]): string => {
   const formattedData = [];
   const [head, ...body] = formerData;
 
@@ -125,7 +126,7 @@ const convertFile = async (
   from: string,
   convertTo: FileType,
   destination: string,
-) => {
+): Promise<void> => {
   const fileData: { chunk: any; type: FileType }[] =
     await getDataFromOriginFile(from);
 
@@ -162,7 +163,7 @@ const convertFile = async (
   );
 };
 
-const aggregateJSONToCSV = () => {};
+const aggregateJSONToCSV = (from: string[], destinantion: string) => {};
 
 // const jsonFile = await getDataFromOriginFile('./test-data/origin/dummy1.json');
 // const csvFile = await getDataFromOriginFile('./test-data/origin/dummy1.csv');
@@ -181,7 +182,7 @@ const aggregateJSONToCSV = () => {};
 // );
 convertFile(
   './test-data/origin/dummy1.csv',
-  FileType.CSV,
+  FileType.JSON,
   './test-data/destination/converted',
 );
 
