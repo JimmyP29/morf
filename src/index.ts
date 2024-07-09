@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import util from 'util';
 import stream from 'stream';
-import { stringify } from 'querystring';
 
 const finished = util.promisify(stream.finished);
 
@@ -47,7 +46,7 @@ const createFileAtDestination = async (
   file: { chunk: any; type: FileType }[],
   fileName: string,
   destination: string,
-): Promise<void> => {
+): Promise<string> => {
   if (!file || file.length === 0) throw Error(`${RED}No file found${RESET}`);
 
   try {
@@ -65,15 +64,13 @@ const createFileAtDestination = async (
     console.error(`${RED}%s${RESET}`, error);
   }
   const now = new Date().toISOString();
-  const finalFileName = `${fileName}-${now}`;
+  const fileNameStamped = `${fileName}-${now}`;
   const { chunk, type } = file[0];
+  const finalFileName = `${fileNameStamped}${type}`;
 
-  const writable = fs.createWriteStream(
-    `${destination}/${finalFileName}${type}`,
-    {
-      encoding: 'utf-8',
-    },
-  );
+  const writable = fs.createWriteStream(`${destination}/${finalFileName}`, {
+    encoding: 'utf-8',
+  });
 
   writable.write(chunk);
   writable.end();
@@ -82,8 +79,10 @@ const createFileAtDestination = async (
 
   console.log(
     `${GREEN}%s${RESET}`,
-    `File (${finalFileName}${type}) created at ${destination}`,
+    `File (${finalFileName}) created at ${destination}`,
   );
+
+  return finalFileName;
 };
 
 const fromJSONToCSV = (formerData: any): string => {
@@ -223,6 +222,7 @@ const glueJSON = (objects: object[]): any => {
 const aggregateJSONToCSV = async (
   from: string[],
   destination: string,
+  newFileName: string,
 ): Promise<void> => {
   if (from.length === 0)
     throw Error(
@@ -262,11 +262,31 @@ const aggregateJSONToCSV = async (
         const glued = glueJSON([...originJSON[0].data, ...originJSON[1].data]);
 
         console.log('GLUED: ', glued);
-        await createFileAtDestination(
-          [{ chunk: JSON.stringify(glued), type: FileType.CSV }],
-          'test-aggregated-csv',
-          destination,
+
+        const fileName = await createFileAtDestination(
+          [{ chunk: JSON.stringify(glued), type: FileType.JSON }],
+          newFileName,
+          'src/internal-temp',
         );
+
+        const internalPathToTempFile = `src/internal-temp/${fileName}`;
+
+        await convertFile(
+          internalPathToTempFile,
+          FileType.CSV,
+          destination,
+        ).then(() => {
+          fs.unlink(internalPathToTempFile, (err) => {
+            if (err) {
+              console.error(`Error removing file: ${err}`);
+              return;
+            }
+
+            console.log(
+              `File ${internalPathToTempFile} has been successfully removed.`,
+            );
+          });
+        });
       } else {
         console.error(
           `${RED}All JSON files provided have to have the same structure, please check and try again.${RESET}`,
@@ -274,12 +294,12 @@ const aggregateJSONToCSV = async (
       }
     });
   } else {
-    // No comparisson checks required - just createFileAtDestination
-    await createFileAtDestination(
-      [{ chunk: JSON.stringify(originJSON), type: FileType.CSV }],
-      'test-aggregated-csv',
-      destination,
-    );
+    // No comparisson checks required - just convertFile
+    // await createFileAtDestination(
+    //   [{ chunk: JSON.stringify(originJSON), type: FileType.CSV }],
+    //   'test-aggregated-csv',
+    //   destination,
+    // );
   }
 };
 // aggregateJSONToCSV(
@@ -289,6 +309,7 @@ const aggregateJSONToCSV = async (
 aggregateJSONToCSV(
   ['./test-data/origin/dummy1.json', './test-data/origin/dummy1.json'],
   './test-data/destination/aggregated',
+  'aggregated-dummy',
 );
 
 // const jsonFile = await getDataFromOriginFile('./test-data/origin/dummy1.json');
