@@ -229,53 +229,88 @@ const aggregateJSONToCSV = async (
       `${RED}Please provide at least one origin path within 'from'.${RESET}`,
     );
 
-  const originJSON: any[] = [];
   const comparison: any[] = [];
 
-  from.forEach(async (fromPath) => {
-    const json = await getDataFromOriginFile(fromPath);
-    if (!json) throw Error(`${RED}Unable to use JSON file (${json}).${RESET}`);
+  Promise.all(
+    from.map(async (fromPath) => {
+      const file = await getDataFromOriginFile(fromPath);
+      if (!file)
+        throw Error(`${RED}Unable to use JSON file (${file}).${RESET}`);
 
-    originJSON.push(JSON.parse(json[0].chunk));
-  });
+      const { chunk } = file[0];
 
-  if (from.length > 1) {
-    Promise.all(
-      from.map((fromPath) => {
-        return standardiseJSONValues(fromPath, '');
-      }),
-    ).then(async (standardisedJSON) => {
-      comparison.push(standardisedJSON);
+      return JSON.parse(chunk);
+    }),
+  ).then(async (originJSON) => {
+    if (from.length > 1) {
+      console.log('ORIGIN JSON (multi): ', originJSON);
+      Promise.all(
+        from.map((fromPath) => {
+          return standardiseJSONValues(fromPath, '');
+        }),
+      ).then(async (standardisedJSON) => {
+        comparison.push(standardisedJSON);
 
-      if (!comparison || !comparison[0]) {
-        throw Error(`${RED}No files to compare${RESET}`);
-      }
+        if (!comparison || !comparison[0]) {
+          throw Error(`${RED}No files to compare${RESET}`);
+        }
 
-      console.log('COMPARISON: ', comparison);
-      console.log(`${CYAN}%s${RESET}`, 'Starting Recursion...');
-      if (isDeepEqual(comparison[0][0], comparison[0][1])) {
-        console.log(
-          `${GREEN}%s${RESET}`,
-          `All JSON file structures match - Good Job!`,
-        );
-        console.log('ORIGIN JSON: ', originJSON);
-        const glued = glueJSON([...originJSON[0].data, ...originJSON[1].data]);
+        console.log('COMPARISON: ', comparison);
+        console.log(`${CYAN}%s${RESET}`, 'Starting Recursion...');
+        if (isDeepEqual(comparison[0][0], comparison[0][1])) {
+          console.log(
+            `${GREEN}%s${RESET}`,
+            `All JSON file structures match - Good Job!`,
+          );
 
-        console.log('GLUED: ', glued);
+          const glued = glueJSON([
+            ...originJSON[0].data,
+            ...originJSON[1].data,
+          ]);
 
-        const fileName = await createFileAtDestination(
-          [{ chunk: JSON.stringify(glued), type: FileType.JSON }],
-          newFileName,
-          'src/internal-temp',
-        );
+          console.log('GLUED: ', glued);
 
-        const internalPathToTempFile = `src/internal-temp/${fileName}`;
+          const fileName = await createFileAtDestination(
+            [{ chunk: JSON.stringify(glued), type: FileType.JSON }],
+            newFileName,
+            'src/internal-temp',
+          );
 
-        await convertFile(
-          internalPathToTempFile,
-          FileType.CSV,
-          destination,
-        ).then(() => {
+          const internalPathToTempFile = `src/internal-temp/${fileName}`;
+
+          await convertFile(
+            internalPathToTempFile,
+            FileType.CSV,
+            destination,
+          ).then(() => {
+            fs.unlink(internalPathToTempFile, (err) => {
+              if (err) {
+                console.error(`Error removing file: ${err}`);
+                return;
+              }
+
+              console.log(
+                `File ${internalPathToTempFile} has been successfully removed.`,
+              );
+            });
+          });
+        } else {
+          console.error(
+            `${RED}All JSON files provided have to have the same structure, please check and try again.${RESET}`,
+          );
+        }
+      });
+    } else {
+      const fileName = await createFileAtDestination(
+        [{ chunk: JSON.stringify(originJSON[0].data), type: FileType.JSON }],
+        newFileName,
+        'src/internal-temp',
+      );
+
+      const internalPathToTempFile = `src/internal-temp/${fileName}`;
+
+      await convertFile(internalPathToTempFile, FileType.CSV, destination).then(
+        () => {
           fs.unlink(internalPathToTempFile, (err) => {
             if (err) {
               console.error(`Error removing file: ${err}`);
@@ -286,31 +321,11 @@ const aggregateJSONToCSV = async (
               `File ${internalPathToTempFile} has been successfully removed.`,
             );
           });
-        });
-      } else {
-        console.error(
-          `${RED}All JSON files provided have to have the same structure, please check and try again.${RESET}`,
-        );
-      }
-    });
-  } else {
-    // No comparisson checks required - just convertFile
-    // await createFileAtDestination(
-    //   [{ chunk: JSON.stringify(originJSON), type: FileType.CSV }],
-    //   'test-aggregated-csv',
-    //   destination,
-    // );
-  }
+        },
+      );
+    }
+  });
 };
-// aggregateJSONToCSV(
-//   ['./test-data/origin/dummy1.json'],
-//   './test-data/destination/aggregated',
-// );
-aggregateJSONToCSV(
-  ['./test-data/origin/dummy1.json', './test-data/origin/dummy1.json'],
-  './test-data/destination/aggregated',
-  'aggregated-dummy',
-);
 
 // const jsonFile = await getDataFromOriginFile('./test-data/origin/dummy1.json');
 // const csvFile = await getDataFromOriginFile('./test-data/origin/dummy1.csv');
@@ -322,3 +337,14 @@ aggregateJSONToCSV(
 //   FileType.JSON,
 //   './test-data/destination/converted',
 // );
+
+await aggregateJSONToCSV(
+  ['./test-data/origin/dummy1.json'],
+  './test-data/destination/aggregated',
+  'single-aggregated-dummy',
+);
+await aggregateJSONToCSV(
+  ['./test-data/origin/dummy1.json', './test-data/origin/dummy1.json'],
+  './test-data/destination/aggregated',
+  'aggregated-dummy',
+);
