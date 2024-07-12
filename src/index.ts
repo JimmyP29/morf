@@ -243,7 +243,6 @@ const aggregateJSONToCSV = async (
     }),
   ).then(async (originJSON) => {
     if (from.length > 1) {
-      console.log('ORIGIN JSON (multi): ', originJSON);
       Promise.all(
         from.map((fromPath) => {
           return standardiseJSONValues(fromPath, '');
@@ -255,18 +254,31 @@ const aggregateJSONToCSV = async (
           throw Error(`${RED}No files to compare${RESET}`);
         }
 
-        console.log('COMPARISON: ', comparison);
-        console.log(`${CYAN}%s${RESET}`, 'Starting Recursion...');
-        if (isDeepEqual(comparison[0][0], comparison[0][1])) {
+        console.log(`${CYAN}%s${RESET}`, 'Starting Comparison Recursion...');
+
+        let isEqual = false;
+        let entry = comparison[0][0];
+
+        comparison[0].forEach((c: any, i: number) => {
+          i === 0 && console.log('I: (Skip first element) ', i);
+
+          if (i > 0) {
+            console.log('I: ', i);
+            isEqual = isDeepEqual(entry, c);
+
+            if (!isEqual) return;
+
+            entry = comparison[0][i];
+          }
+        });
+
+        if (isEqual) {
           console.log(
             `${GREEN}%s${RESET}`,
             `All JSON file structures match - Good Job!`,
           );
 
-          const glued = glueJSON([
-            ...originJSON[0].data,
-            ...originJSON[1].data,
-          ]);
+          const glued = glueJSON(originJSON.map((oj) => oj.data));
 
           console.log('GLUED: ', glued);
 
@@ -288,7 +300,6 @@ const aggregateJSONToCSV = async (
                 console.error(`Error removing file: ${err}`);
                 return;
               }
-
               console.log(
                 `File ${internalPathToTempFile} has been successfully removed.`,
               );
@@ -338,13 +349,23 @@ const aggregateJSONToCSV = async (
 //   './test-data/destination/converted',
 // );
 
+// await aggregateJSONToCSV(
+//   ['./test-data/origin/dummy1.json'],
+//   './test-data/destination/aggregated',
+//   'single-aggregated-dummy',
+// );
 await aggregateJSONToCSV(
-  ['./test-data/origin/dummy1.json'],
+  [
+    './test-data/origin/dummy1.json',
+    './test-data/origin/dummy1.json',
+    './test-data/origin/dummy1.json',
+    './test-data/origin/dummy1.json',
+    './test-data/origin/dummy1.json',
+    './test-data/origin/dummy1.json',
+    './test-data/origin/dummy1.json',
+    './test-data/origin/dummy1.json',
+    './test-data/origin/dummy1.json',
+  ],
   './test-data/destination/aggregated',
-  'single-aggregated-dummy',
-);
-await aggregateJSONToCSV(
-  ['./test-data/origin/dummy1.json', './test-data/origin/dummy1.json'],
-  './test-data/destination/aggregated',
-  'aggregated-dummy',
+  'large-aggregated-dummy',
 );
