@@ -86,15 +86,65 @@ const createFileAtDestination = async (
 };
 
 const fromJSONToCSV = (formerData: any): string => {
-  let csv;
+  let csv: any;
   try {
-    csv = formerData.map((row: any) => Object.values(row));
+    const csvHeaders: string[] = [];
+    const csvValues: [][] = [];
+    csv = formerData.map((row: any) => {
+      const headers = row.map((r) => {
+        return Object.keys(r);
+      });
 
-    csv.unshift(Object.keys(formerData[0]));
+      const values = row.map((r) => {
+        return Object.values(r);
+      });
+
+      csvHeaders.push(headers[0]);
+      csvValues.push(values);
+    });
+
+    const blah = csvValues[0].map((val) => {
+      const values = Object.values(val);
+      const meh = values.map((v: any, i) => {
+        if (i === values.length - 1) {
+          return `${v} !^@!`;
+        }
+
+        return v;
+      });
+
+      return meh;
+    });
+
+    const values = blah.map((b) => {
+      b.map((entry, i) => {
+        if (i === 0) {
+          return `\n ${entry}`;
+        }
+
+        return entry;
+      });
+
+      return b;
+    });
+
+    let valueString = '';
+    values.flat(2).forEach((value) => {
+      valueString += `${value},`;
+    });
+
+    const search = '!^@!,';
+    const replaceWith = '\n';
+    const result = valueString.split(search).join(replaceWith);
+
+    const csvFinal = `${csvHeaders.join(',')}\n${result}`;
+
+    csv = csvFinal;
   } catch (error) {
     console.error(`${RED}${error}${RESET}`);
   }
-  return csv.join('\n');
+
+  return csv;
 };
 
 const fromCSVToJSON = (formerData: any[]): string => {
@@ -343,29 +393,29 @@ const aggregateJSONToCSV = async (
 
 // createFileAtDestination(jsonFile as [], './test-data/destination');
 
-// convertFile(
-//   './test-data/origin/dummy1.csv',
-//   FileType.JSON,
-//   './test-data/destination/converted',
-// );
+await convertFile(
+  './test-data/origin/people-2.json',
+  FileType.CSV,
+  './test-data/destination/converted',
+);
 
 // await aggregateJSONToCSV(
 //   ['./test-data/origin/dummy1.json'],
 //   './test-data/destination/aggregated',
 //   'single-aggregated-dummy',
 // );
-await aggregateJSONToCSV(
-  [
-    './test-data/origin/dummy1.json',
-    './test-data/origin/dummy1.json',
-    './test-data/origin/dummy1.json',
-    './test-data/origin/dummy1.json',
-    './test-data/origin/dummy1.json',
-    './test-data/origin/dummy1.json',
-    './test-data/origin/dummy1.json',
-    './test-data/origin/dummy1.json',
-    './test-data/origin/dummy1.json',
-  ],
-  './test-data/destination/aggregated',
-  'large-aggregated-dummy',
-);
+// await aggregateJSONToCSV(
+//   [
+//     './test-data/origin/dummy1.json',
+//     './test-data/origin/dummy1.json',
+//     './test-data/origin/dummy1.json',
+//     './test-data/origin/dummy1.json',
+//     './test-data/origin/dummy1.json',
+//     './test-data/origin/dummy1.json',
+//     './test-data/origin/dummy1.json',
+//     './test-data/origin/dummy1.json',
+//     './test-data/origin/dummy1.json',
+//   ],
+//   './test-data/destination/aggregated',
+//   'large-aggregated-dummy',
+// );
