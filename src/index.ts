@@ -86,16 +86,18 @@ const createFileAtDestination = async (
 };
 
 const fromJSONToCSV = (formerData: any): string => {
+  const placeholder = '!^@!';
   let csv: any;
+
   try {
     const csvHeaders: string[] = [];
     const csvValues: [][] = [];
     csv = formerData.map((row: any) => {
-      const headers = row.map((r) => {
+      const headers = row.map((r: any) => {
         return Object.keys(r);
       });
 
-      const values = row.map((r) => {
+      const values = row.map((r: any) => {
         return Object.values(r);
       });
 
@@ -103,21 +105,21 @@ const fromJSONToCSV = (formerData: any): string => {
       csvValues.push(values);
     });
 
-    const blah = csvValues[0].map((val) => {
+    const valuesWithPlaceholder = csvValues[0].map((val) => {
       const values = Object.values(val);
-      const meh = values.map((v: any, i) => {
+      const withPlaceholders = values.map((v: any, i) => {
         if (i === values.length - 1) {
-          return `${v} !^@!`;
+          return `${v} ${placeholder}`;
         }
 
         return v;
       });
 
-      return meh;
+      return withPlaceholders;
     });
 
-    const values = blah.map((b) => {
-      b.map((entry, i) => {
+    const values = valuesWithPlaceholder.map((val) => {
+      val.map((entry, i) => {
         if (i === 0) {
           return `\n ${entry}`;
         }
@@ -125,7 +127,7 @@ const fromJSONToCSV = (formerData: any): string => {
         return entry;
       });
 
-      return b;
+      return val;
     });
 
     let valueString = '';
@@ -133,7 +135,7 @@ const fromJSONToCSV = (formerData: any): string => {
       valueString += `${value},`;
     });
 
-    const search = '!^@!,';
+    const search = `${placeholder},`;
     const replaceWith = '\n';
     const result = valueString.split(search).join(replaceWith);
 
@@ -394,8 +396,8 @@ const aggregateJSONToCSV = async (
 // createFileAtDestination(jsonFile as [], './test-data/destination');
 
 await convertFile(
-  './test-data/origin/people-2.json',
-  FileType.CSV,
+  './test-data/origin/people-2.csv',
+  FileType.JSON,
   './test-data/destination/converted',
 );
 
